@@ -1,0 +1,74 @@
+<<<<<<< HEAD
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  margin: auto;
+  max-width: 38rem;
+  padding: 2rem;
+=======
+html, body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-app-region: drag; /* Make the whole window draggable */
+  -webkit-scrollbar {
+    display: none; 
+}
+  overflow-x: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.app {
+  width: 760px;
+  min-height: 60px;
+  background: transparent;
+  border-radius: 5px;
+  background-color: rgba(7, 7, 7, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  display: flex;
+  flex-direction: column; /* Stack children vertically */
+  align-items: stretch;
+  padding: 0;
+}
+
+
+.search-bar {
+  border-radius: 5px;
+  padding: 16px 24px;
+  -webkit-app-region: no-drag; /* Make search bar not draggable so you can interact with input */
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-bar input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1em;
+  outline: none;
+  width: 530px;
+}
+
+.results {
+  margin-top: 8px;
+  -webkit-app-region: no-drag; 
+  transition: max-height 0.3s ease;
+  border-radius: 5px;
+}
+.results .row {
+  padding: 20px;
+  border-radius: 5px;
+  margin-top: 4px;
+  color: #d8d8d8;
+  cursor: pointer;
+}
+.results .row:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+>>>>>>> e050107 (Here goes nothing)
+}
