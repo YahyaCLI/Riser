@@ -1,3 +1,4 @@
+// appIndexer.js
 const fs = require('fs');
 const path = require('path');
 const { ipcMain } = require('electron');
@@ -138,7 +139,7 @@ async function buildIndex(userDataPath) {
   return indexed;
 }
 
-// Add the missing loadOrBuildIndex function
+// Load existing index or build new one
 async function loadOrBuildIndex(userDataPath) {
   const idxPath = indexFilePath(userDataPath);
   
@@ -155,6 +156,87 @@ async function loadOrBuildIndex(userDataPath) {
   // Build fresh index if loading failed
   return buildIndex(userDataPath);
 }
+
+// -----------------------
+// Incremental helpers
+// -----------------------
+
+// Load index file into Map(filePath -> item)
+async function loadIndexMap(userDataPath) {
+  const idxPath = indexFilePath(userDataPath);
+  if (!fs.existsSync(idxPath)) return new Map();
+  try {
+    const raw = await fs.promises.readFile(idxPath, 'utf8');
+    const arr = JSON.parse(raw);
+    return new Map(arr.map(it => [it.file, it]));
+  } catch (e) {
+    // corrupted file -> return empty
+    return new Map();
+  }
+}
+
+// Save map back to disk
+async function saveIndexMap(userDataPath, map) {
+  const idxPath = indexFilePath(userDataPath);
+  const arr = Array.from(map.values());
+  await fs.promises.mkdir(path.dirname(idxPath), { recursive: true });
+  await fs.promises.writeFile(idxPath, JSON.stringify(arr, null, 2), 'utf8');
+}
+
+// Allowed extensions for incremental add (same set used in walkDir)
+const ALLOWED_EXTS = new Set([
+  '.lnk', '.url', '.appref-ms',
+  '.txt', '.pdf', '.doc', '.docx', '.xls', '.xlsx',
+  '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif',
+  '.mp3', '.mp4', '.wav', '.zip', '.rar'
+]);
+
+// Add or update a single file into the index (best-effort)
+async function incrementalAdd(userDataPath, filePath) {
+  try {
+    const stat = await fs.promises.stat(filePath);
+    if (!stat.isFile()) return false;
+  } catch (e) {
+    return false; // file doesn't exist or inaccessible
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+  if (!ALLOWED_EXTS.has(ext)) return false;
+
+  const map = await loadIndexMap(userDataPath);
+  const name = path.parse(filePath).name;
+
+  const existing = map.get(filePath) || {};
+  const item = {
+    type: (['.lnk', '.url', '.appref-ms'].includes(ext) ? 'application' : 'file'),
+    name,
+    file: filePath,
+    ext,
+    size: (await fs.promises.stat(filePath).catch(()=>({ size: 0 }))).size || 0,
+    mtime: (await fs.promises.stat(filePath).catch(()=>({ mtimeMs: 0 }))).mtimeMs || 0,
+    launchCount: existing.launchCount || 0,
+    lastUsed: existing.lastUsed || 0
+  };
+
+  map.set(filePath, item);
+  await saveIndexMap(userDataPath, map);
+  return true;
+}
+
+// Remove a single file from the index
+async function incrementalRemove(userDataPath, filePath) {
+  const map = await loadIndexMap(userDataPath);
+  if (map.has(filePath)) {
+    map.delete(filePath);
+    await saveIndexMap(userDataPath, map);
+    return true;
+  }
+  return false;
+}
+
+// -----------------------
+// IPC handlers
+// -----------------------
 
 function registerIpcHandlers(getUserDataPath) {
   ipcMain.handle('index-apps', async () => {
@@ -194,5 +276,9 @@ function registerIpcHandlers(getUserDataPath) {
 module.exports = {
   buildIndex,
   loadOrBuildIndex,
-  registerIpcHandlers
+  registerIpcHandlers,
+  incrementalAdd,
+  incrementalRemove,
+  loadIndexMap,
+  saveIndexMap
 };
