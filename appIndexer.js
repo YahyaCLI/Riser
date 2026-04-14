@@ -1,11 +1,9 @@
-// appIndexer.js
 const fs = require('fs');
 const path = require('path');
 const { ipcMain } = require('electron');
 const { exec } = require('child_process');
 
-// Only run on Windows — return empty list otherwise
-const IS_WINDOWS = process.platform === 'win32';
+const IS_WINDOWS = process.platform === 'win32'; // Only windows ;)
 
 // Common Start Menu and user directory locations
 const START_MENU_COMMON = 'C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs';
@@ -55,7 +53,7 @@ async function walkDir(dir, options = {}) {
         const ext = path.extname(entry.name).toLowerCase();
         const name = path.parse(entry.name).name;
         
-        // Include shortcuts and optionally other files
+        // Will include shortcuts and optionally other files
         if (['.lnk', '.url', '.appref-ms'].includes(ext)) {
           results.push({
             name,
@@ -64,7 +62,6 @@ async function walkDir(dir, options = {}) {
             type: 'application'
           });
         } else if (includeFiles) {
-          // Filter for common file types
           const allowedExts = [
             '.txt', '.pdf', '.doc', '.docx', '.xls', '.xlsx',
             '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif',
