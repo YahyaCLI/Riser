@@ -1,15 +1,13 @@
 // index.js (main)
 const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
-const indexer = require('./AppIndexer'); // keep exact casing/path you used
+const indexer = require('./AppIndexer'); 
 const path = require('path');
 const fs = require('fs');
 
-// Optional watcher (requires indexWatcher.js to exist in project root)
 let startWatcher = null;
 try {
   startWatcher = require('./indexWatcher').startWatcher;
 } catch (e) {
-  // watcher is optional — if missing we'll just continue without watching
   startWatcher = null;
 }
 
@@ -32,7 +30,6 @@ function createWindow() {
   win.loadFile('src/index.html');
   win.setMenu(null);
 
-  // When the renderer finishes loading, send initial index snapshot
   win.webContents.on('did-finish-load', async () => {
     try {
       const idx = await indexer.loadOrBuildIndex(app.getPath('userData'));
@@ -41,7 +38,7 @@ function createWindow() {
       console.log(`Sent index to renderer - ${idx.length} items`);
     } catch (e) {
       console.warn('Failed to send index to renderer on did-finish-load', e);
-      win.webContents.send('index-ready', []); // still send something
+      win.webContents.send('index-ready', []); // help me :(
     }
   });
 
@@ -66,7 +63,6 @@ app.whenReady().then(async () => {
     console.warn('Index build failed', e);
   }
 
-  // Your existing "fresh build" flow (delete old index file then rebuild)
   try {
     // Force a fresh index build by deleting the old one
     const indexPath = path.join(app.getPath('userData'), 'app-index.json');
@@ -76,7 +72,7 @@ app.whenReady().then(async () => {
 
     }
 
-    // Build fresh index
+    // Build fresh and update index
     const idx = await indexer.loadOrBuildIndex(app.getPath('userData'));
     
     // Log statistics about indexed items
@@ -114,7 +110,7 @@ app.whenReady().then(async () => {
         path.join(userProfile, 'Desktop')
       ].filter(p => p && fs.existsSync(p));
 
-      // Start the watcher. onChange will reload index & push to renderer
+      // Start the watcher. on Change will reload index & push to renderer
       const watcher = startWatcher({
         userDataPath: app.getPath('userData'),
         startMenuDirs,
@@ -131,8 +127,6 @@ app.whenReady().then(async () => {
           }
         }
       });
-
-      // app lifecycle: close watcher on quit
       app.on('will-quit', () => {
         try { if (watcher && watcher.close) watcher.close(); } catch (e) {}
       });
@@ -143,7 +137,7 @@ app.whenReady().then(async () => {
     console.warn('Failed to start index watcher', e);
   }
 
-  // Global shortcut registration
+  // Global shortcut listening
   const success = globalShortcut.register('Control+Space', () => {
     if (!win) return;
     if (win.isVisible()) {
