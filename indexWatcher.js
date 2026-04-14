@@ -1,5 +1,3 @@
-// indexWatcher.js (updated - safer)
-// npm install chokidar if you haven't already
 
 const chokidar = require('chokidar');
 const fs = require('fs');
@@ -39,8 +37,7 @@ function startWatcher(opts) {
     console.log('indexWatcher: no valid paths to watch.');
     return { close: () => {} };
   }
-
-  // chokidar options - tolerate permission errors and ignore initial adds
+  
   const watcher = chokidar.watch(watchPaths, {
     persistent: true,
     ignoreInitial: true,
@@ -87,9 +84,7 @@ function startWatcher(opts) {
   }
 
   function schedule(p) {
-    // Optionally skip unreadable paths that appear in events
     if (!pathIsReadable(path.dirname(p))) {
-      // parent unreadable — skip scheduling
       return;
     }
     changed.add(p);
@@ -103,9 +98,7 @@ function startWatcher(opts) {
   watcher.on('unlinkDir', schedule);
 
   watcher.on('error', (err) => {
-    // chokidar emits errors — log and continue. If it's permission-related, ignore.
     console.warn('Watcher error', err && err.message ? err.message : err);
-    // Do not throw; we want watcher to keep trying for other paths.
   });
 
   return {
